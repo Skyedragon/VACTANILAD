@@ -4,8 +4,8 @@ import RPi.GPIO as GPIO
 
 class SwissBOY:
     def __init__(self, step):
-        self.up = 3
-        self.down = 5
+        self.up = 5
+        self.down = 3
         self.step = step
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
@@ -18,13 +18,13 @@ class SwissBOY:
         GPIO.output(self.up, GPIO.HIGH)
         time.sleep(self.step)
         GPIO.output(self.up, GPIO.LOW)
-        time.sleep(0.1)
+        time.sleep(self.step)
         
     def go_down(self):
         GPIO.output(self.down, GPIO.HIGH)
         time.sleep(self.step)
         GPIO.output(self.down, GPIO.LOW)
-        time.sleep(0.1)
+        time.sleep(self.step)
                    
     def flush(self):
         GPIO.output(self.up, GPIO.LOW)
@@ -33,9 +33,9 @@ class SwissBOY:
 if __name__ == "__main__":
     S = SwissBOY(3)
     while True:
-        MCP = MCP3204(1)
+        MCP = MCP3204()
         S.flush()
         S.go_up()
-        print(MCP.getAnalogData(0))
+        print(MCP.getAnalogData(sleep = 0, channel = 0))
         S.go_down()
-        print(MCP.getAnalogData(0))
+        print(MCP.getAnalogData(sleep = 0, channel = 0))
