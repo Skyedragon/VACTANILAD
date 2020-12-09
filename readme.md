@@ -16,3 +16,11 @@ Files with names of the components contain simple class with primitive methods l
 TO DO file has current tasks which have to be finished.
 
 Further logic or updates will be written here
+
+Swissboy: left connector in the black box is related to the left connector in SwissBOY driver box
+
+Test command starts python3 test.py [vertical position] [horizontal position]
+
+example: python3 test.py 70 40
+
+answer: vertical steps and feedback from megatron and answer from ISEL also about carriage position
