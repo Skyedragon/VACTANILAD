@@ -87,6 +87,6 @@ class NetworkAnalyser:
 
 if __name__ == "__main__":
 
-    myvna=NetworkAnalyser('VACTANILAD.cal','192.168.1.3', measurement='S11')
+    myvna=NetworkAnalyser('VACTANILAD.cal','192.168.1.3', measurement='s12')
     myvna.connect()
     print("Filename " + myvna.save_to_file(myvna.get_nice_filename(), myvna.get_data(),touchstone=False)  + " was created")

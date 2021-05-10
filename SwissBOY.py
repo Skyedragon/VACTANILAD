@@ -8,6 +8,12 @@ class SwissBOY:
         self.up = 3
         self.down = 5
         self.step = step
+        self.bits = 12 #MCP3204 is 12-bit ADC
+        self.rc35len = 400 #RC35 can stretch up to 400 mm
+        self.mcp_vert_zero = 0.09765625 # MCP output at physical zero vertical point
+        self.MCP = MCP3204()
+        self.copperzero = 10.2
+
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.up, GPIO.OUT)
@@ -32,45 +38,34 @@ class SwissBOY:
         GPIO.output(self.down, GPIO.LOW)
     
     def go_to_vert_pos(self, pos):
+        aver = 100
         SW = self.__class__(float(1/self.step))# speed is steps/second, and SwissBOY initialized with time delay between steps           
-        bits = 12 #MCP3204 is 12-bit ADC                                                                                       
-        rc35len = 400 #RC35 can stretch up to 400 mm                                                                           
-        mcp_vert_zero = 0.09765625 # MCP output at physical zero vertical point                                                
-        aver = 100 #for averaging of the MCP output                                                                          
-        MCP = MCP3204()
-        pos = float (pos) #convert string from sys.argv into number                                                            
-        step = 0
-        copperzero = 10.2
-        curr_pos = (rc35len-MCP.getAnalogData(sleep = 0.0,channel = 0)/2**bits*rc35len-mcp_vert_zero)+copperzero
-        print("Current position: ", curr_pos)
-        if (curr_pos < pos): #if entered value is bigger than current position                                                 
-            while (curr_pos < pos):
+        self.pos = float (pos) #convert string from sys.argv into number                       
+        self.curr_pos = (self.rc35len-self.MCP.getAnalogData(sleep = 0.0,channel = 0)/2**self.bits*self.rc35len-self.mcp_vert_zero)+self.copperzero
+        #print("Current position: ", curr_pos)
+
+        if (self.curr_pos < self.pos): #if entered value is bigger than current position                                                 
+            while (self.curr_pos < self.pos):
                 SW.go_up() #make one step up                                                                                   
-                #time.sleep(1)                                                                                                 
                 for i in range (aver): #average MCP output. It is a bit unstable around real position                          
                     #position goes from 0 until 400 mm. But MCP counts 0 point at the 4095                                     
                     #that`s why position in mm = MAX_pos - ADC_output / MAX_ADC_output * total_length                          
-                    curr_pos +=  (rc35len-MCP.getAnalogData(sleep = 0.0,channel = 0)/2**bits*rc35len-mcp_vert_zero)+copperzero
-                curr_pos = round(curr_pos/(aver+1), 2)
-                step += 1
-                print(curr_pos, step)
+                    self.curr_pos +=  (self.rc35len-self.MCP.getAnalogData(sleep = 0.0,channel = 0)/2**self.bits*self.rc35len-self.mcp_vert_zero)+self.copperzero
+                self.curr_pos = round(self.curr_pos/(aver+1), 2)
+                print(self.curr_pos)
             SW.flush() #it is necessary to swith off the relays after each turn. In case you will stop your program in the mid
-            return curr_pos
 
-        if (curr_pos > pos):
-            while (curr_pos > pos):
+        if (self.curr_pos > self.pos):
+            while (self.curr_pos > self.pos):
                 SW.go_down()
-                #time.sleep(1)                                                                                                 
                 for i in range (aver):
-                    curr_pos +=  (rc35len-MCP.getAnalogData(sleep = 0.0,channel = 0)/2**bits*rc35len-mcp_vert_zero)+copperzero
-                curr_pos = round(curr_pos/(aver+1), 2)
-                step += 1
-                print(curr_pos, step)
+                    self.curr_pos +=  (self.rc35len-self.MCP.getAnalogData(sleep = 0.0,channel = 0)/2**self.bits*self.rc35len-self.mcp_vert_zero)+self.copperzero
+                self.curr_pos = round(self.curr_pos/(aver+1), 2)
+                print(self.curr_pos)
             SW.flush() #it is necessary to swith off the relays after each turn. In case you will stop your program in the middle
-            return curr_pos
-
+         
     def get_vert_pos(self):
-        return (rc35len-MCP.getAnalogData(sleep = 0.0,channel = 0)/2**bits*rc35len-mcp_vert_zero)+copperzero
+        return round((self.rc35len-self.MCP.getAnalogData(sleep = 0.0,channel = 0)/2**self.bits*self.rc35len-self.mcp_vert_zero)+self.copperzero, 2)
     
 if __name__ == "__main__":
     S = SwissBOY(15)

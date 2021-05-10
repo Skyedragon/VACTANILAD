@@ -1,3 +1,5 @@
+#!/usr/bin/python
+#-*- coding:utf-8 -*-
 import time
 import RPi.GPIO as GPIO
 
@@ -24,9 +26,10 @@ class MCP3204:
             GPIO.output(self.CS,   LOW)
             GPIO.output(self.CLK,  LOW)
 
+            time.sleep(sleep)
             cmd = channel
             cmd |= 0b00011000 # Kommando zum Abruf der Analogwerte des Datenkanals adCh
-        #Bitfolgesenden
+            #Bitfolgesenden
             for i in range(5):
                 if (cmd & 0x10): # 4. Bit prüfen und mit 0 anfangen
                     GPIO.output(self.DIN, HIGH)
@@ -44,11 +47,10 @@ class MCP3204:
                 adchvalue <<= 1 # 1 Postition nach links schieben
                 if(GPIO.input(self.DOUT)):
                         adchvalue |= 0x01
-            time.sleep(sleep)
             return adchvalue
 
 if __name__ == "__main__":
         MCP=MCP3204() #0.390625 is a value of fully closed pot-r
         while True:
-                print ("channel 0: ", MCP.getAnalogData(sleep = 1, channel = 0))
+                print ("channel 0: ", 389.8-MCP.getAnalogData(sleep = 1, channel = 0)/4096*400)
                 print ("channel 1: ", MCP.getAnalogData(sleep = 1, channel = 1))
