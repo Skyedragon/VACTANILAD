@@ -1,7 +1,11 @@
-#give nine or six numbers. First is left-right displacement, second is top-bottom, third is forward-backward                                                                                                                                  
+#Program awaits (dimensions x 3) numbers. First is left-right displacement, second is top-bottom, third is forward-backward                                                                                                                                  
 # 0 90 5 means from 0 to 90 mm with step of 5 mm from left to the right                                                                                                                                                                       
 # 0 90 5 120 155 10 - in addition do left-right movements for every height from 120 mm to 155 mm with step of 10 mm in height                                                                                                                 
-# 0 90 5 120 155 10 0 200 20 - XYZ movement. For each Y do all Z with all X for each Z                                                                                                                                                        
+# 0 90 5 120 155 10 0 200 20 - XYZ movement. For each Y do all Z with all X for each Z
+
+#For lime measurements in 2D:
+#--xstart 0 --xstop 90 --xstep 5 --ystart 160 --ystop 200 --ystep 5 --meastime 1 --center 500e6 --samprate 1e6 --bw 4e6 --channel 1 2
+
 from MCP3204 import *
 from SwissBOY import *
 from ISEL import *
@@ -14,19 +18,30 @@ import time
 ISEL = ISEL(19200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE, 1)
 S = SwissBOY(15)
 
+#this function moves the cavity in 2D (left-right-top-bottom) and records data for every cavity position
+#VNA and LimeSDR measurements are possible, one has to uncomment needed lines
 def measureXY(xstart, xstop, xstep, ystart, ystop, ystep, center, meas_time, bw, samprate, channel):
     ISEL.go_horiz_pos(xstart, 0, 2000)
+    #next two lines are needed to initialize and connect to VNA
     #myvna=NetworkAnalyser('VACTANILAD.cal','192.168.1.3', measurement='S11')
     #myvna.connect()
     S.go_to_vert_pos(ystart)
     for y in range(ystart, ystop, ystep):
         for x in range (xstart, xstop + xstep, xstep):
+            ISEL.go_horiz_pos(x,0,2000)
             print ('Meas at: ', x, y)
             time.sleep(1)#for measurements make 10
-            #print("Filename " + myvna.save_to_file(myvna.get_nice_filename(), myvna.get_data(), touchstone = False)  + " was created")
             Lime = LimeSDR(center, meas_time, bw, samprate, channel)
-            Lime.make_iq( (str (datetime.now().time() )+'ch1.bin', str(datetime.now().time() )+'ch2.bin'), int(meas_time) ) 
-            ISEL.go_horiz_pos(x + xstep,0,2000)
+
+            #next line is needed for measurements using VNA
+            #print("Filename " + myvna.save_to_file(myvna.get_nice_filename(), myvna.get_data(), touchstone = False)  + " was created")
+
+            #next line is needed for measurement with different filenames
+            #Lime.make_iq( (str (datetime.now().time() )+'ch1.bin', str(datetime.now().time() )+'ch2.bin'), int(meas_time) )
+
+            #next line is needed for test measurements for 36 hours. Data was saved in the same file
+            Lime.make_iq( ('ch1.bin', 'ch2.bin'), int(meas_time) ) 
+            x += xstep
         S.go_to_vert_pos(y+ystep)
 
     for x in range (xstart, xstop + xstep, xstep):
@@ -34,9 +49,12 @@ def measureXY(xstart, xstop, xstep, ystart, ystop, ystep, center, meas_time, bw,
         time.sleep(1)#for measurements make 10
         #print("Filename " + myvna.save_to_file(myvna.get_nice_filename(), myvna.get_data(),touchstone = False)  + " was created")
         Lime = LimeSDR(center, meas_time, bw, samprate, channel)
-        Lime.make_iq( ( str( datetime.now().time() )+'ch1.bin', str( datetime.now().time() )+'ch2.bin'), int(meas_time) )  
+        Lime.make_iq( ('ch1.bin', 'ch2.bin'), int(meas_time) )
+        #Lime.make_iq( ( str( datetime.now().time() )+'ch1.bin', str( datetime.now().time() )+'ch2.bin'), int(meas_time) )  
         ISEL.go_horiz_pos(x+xstep,0,2000)
 
+#This function was made for bead measurements and it allows to move cavity in 3D.
+#Measurements using VNA are possible
 def measureXYZ(xstart, xstop, xstep, ystart, ystop, ystep, zstart, zstop, zstep):
     ISEL.go_horiz_pos(xstart, zstart, 2000)
     S.go_to_vert_pos(ystart)
@@ -75,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--filename", type=str, action='append', nargs='+', help="Path to saved file")
     args = parser.parse_args()
 
-    if args.meastime and args.samprate and args.bw and args.filename and args.channel:
+    if args.meastime and args.samprate and args.bw and args.channel:
         print ("Central frequency set to ", args.center, " Hz.")
         print ("Measurement time set to ", args.time, " sec.")
         print ("Sampling rate set to ", args.samprate, " Samples/sec.")
